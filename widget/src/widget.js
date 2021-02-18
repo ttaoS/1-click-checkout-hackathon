@@ -6,8 +6,8 @@
 
     const openCheckoutModal = async (sku) => {
         overlay = document.createElement('div');
-        url.searchParams.append('sku', sku);
         const url = new URL(checkoutUrl);
+        url.searchParams.append('sku', sku);
 
         Object.assign(overlay.style, {
             position: 'absolute',
@@ -89,18 +89,18 @@
     
         widget.appendChild(iframe);
     });
-
-    window.addEventListener('onmessage', ({ data }) => {
-        switch(data.event) {
-            case 'complete':
-                const orderId = data.order_id;
-                closeModal();
-                location.assign(`checkout/onepage/success/?order_id=${orderId}`);
-                break;
-            case 'cancel':
-                closeModal();
-                break;
-        }
-    });
-
 })();
+
+window.addEventListener('onmessage', ({ data }) => {
+    console.log('event', data);
+    switch(data.event) {
+        case 'complete':
+            const orderId = data.order_id;
+            closeModal();
+            location.assign(`checkout/onepage/success/?order_id=${orderId}`);
+            break;
+        case 'cancel':
+            closeModal();
+            break;
+    }
+});

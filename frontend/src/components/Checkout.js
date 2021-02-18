@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
-import Avatar from '@material-ui/core/Avatar';
-import Chip from '@material-ui/core/Chip';
 import { Spinner } from '@zip/components';
 import { AppBar } from '@zip/components';
 import { Buttons } from '@zip/components';
@@ -51,6 +49,7 @@ const CheckoutPage = ({ sku, merchantDomain }) => {
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(false);
     const [total, setTotal] = useState(null);
+    const [success, setSuccess] = useState(false);
 
     const [addresses, setAddresses] = useState([]);
     const [shippingMethods, setShippingMethods] =  useState([]);
@@ -245,8 +244,10 @@ const CheckoutPage = ({ sku, merchantDomain }) => {
         const isInIFrame = window.self !== window.top;
         // success
         if (isInIFrame && ChargeId) {
+            console.log('send message');
             window.parent.postMessage(
                 {
+                    name: 'zip_it',
                     event: 'complete',
                     orderId: orderId,
                     chargeId: ChargeId,
@@ -256,15 +257,32 @@ const CheckoutPage = ({ sku, merchantDomain }) => {
         }
 
         setLoading(false);
+        setSuccess(true);
+
+        setTimeout(() => {
+            window.location.replace(`${merchantDomain}/checkout/onepage/success/?order_id=${orderId}`);
+        }, 500)
     }
 
-    if (!quoteId) {
+    if (success) {
         return <>
                 <div className={classes.welcomeSplashContainer}>
                 <div className={classes.checkoutLoading}>
                     <Spinner />
                 </div>
                 <h1 className={classes.checkoutLoading}>Thanks for choosing Zip</h1>
+                <div className={classes.checkoutLoading}>We&apos;ll redirect you to the merchant site</div>
+            </div>
+        </>
+    }
+
+    if (!quoteId) {
+        return <>
+                <div className={classes.welcomeSplashContainer}>
+                <div className={classes.checkoutLoading}>
+                    <Icons.ZipLogo size="50" />
+                </div>
+                <h1 className={classes.checkoutLoading}>Order been placed successfully</h1>
                 <div className={classes.checkoutLoading}>We&apos;ll make this quick and easy</div>
             </div>
         </>
@@ -274,9 +292,7 @@ const CheckoutPage = ({ sku, merchantDomain }) => {
         <>
             <AppBar endAdornment={<div style={{
                 textAlign: 'right'
-                }}>{ product && `$${total}` }</div>} startAdornment={
-                    customer && <Chip avatar={<Avatar src="https://zip.co/assets/zip/core-icons/user.svg" />} label={`${customer.firstName} ${customer.lastName}`} />
-                } />
+                }}>{ product && `$${total}` }</div>}/>
 
             {
                 product && 
