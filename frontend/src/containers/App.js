@@ -14,7 +14,7 @@ class App extends Component {
             <div className={classes(styles.appBody, [styles.padded, true])}>
                 <Router>
                 <Switch>
-                    <Route exact path="/checkout" component={Home}>
+                    <Route exact path="/" component={Home}>
                     </Route>
                     <Route exact path="/test">
                         <>test</>
