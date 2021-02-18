@@ -5,7 +5,7 @@ import inputStyles from '../css/input-text.module.css';
 import ShoppingCart from "./ShoppingCart";
 
 const HomePage = (props) => {
-
+    const customerHeader = <p>Customer info:</p>;
     const header = <p className={headerStyles.header}>1 click checkout</p>;
     const nameInput =
         <label>
@@ -21,7 +21,7 @@ const HomePage = (props) => {
             <span className={labelValueStyles.label}>Email</span>
             <input type='text'
                    name='email'
-                   value={props.contact}
+                   value='test'
                    className={inputStyles.root}
             />
         </label>;
@@ -30,7 +30,7 @@ const HomePage = (props) => {
             <span className={labelValueStyles.label}>Shipping address</span>
             <input type='text'
                    name='shippingAddress'
-                   value={props.shippingAddress}
+                   value={props.data.shippingAddress}
                    className={inputStyles.root}
             />
         </label>;
@@ -38,7 +38,11 @@ const HomePage = (props) => {
     return (
         <>
             {header}
-            <ShoppingCart/>
+            <ShoppingCart data={props.data.shoppingCart}/>
+            <hr></hr>
+            <br></br>
+            {customerHeader}
+            <br></br>
             {nameInput}
             {contactInput}
             {shippingAddressInput}

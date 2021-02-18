@@ -1,23 +1,26 @@
 import React, {Component} from 'react';
 import styles from '../css/app.module.css';
 import {classes} from '../domain/format';
-import HomePage from "../components/Home";
+import {
+    BrowserRouter as Router,
+    Switch,
+    Route
+} from "react-router-dom";
+import Home from "./Home";
 
 class App extends Component {
-    constructor(props) {
-        super(props);
-
-        this.state = {
-            data: { name: 'test'}
-        };
-
-        console.log(this.props);
-    }
-
     render() {
         return <>
             <div className={classes(styles.appBody, [styles.padded, true])}>
-                <HomePage data={this.state.data}/>
+                <Router>
+                <Switch>
+                    <Route exact path="/checkout" component={Home}>
+                    </Route>
+                    <Route exact path="/test">
+                        <>test</>
+                    </Route>
+                </Switch>
+                </Router>
             </div>
         </>;
     };
