@@ -5,11 +5,24 @@
     const checkoutUrl = "http://1-click-checkout.s3-website-ap-southeast-2.amazonaws.com";
 
     const widget = document.getElementById("zip-it-widget");
-    const overlay = document.createElement('div');
+    let overlay = document.createElement('div');
     let quoteId = null;
 
-    const retrieveCart = async (sku) => {
+    const retrieveCartItem = async (sku) => {
         const createCartResponse = await fetch(`${domain}/rest/V1/guest-carts`, {
+            method: 'POST',
+            cache: 'no-cache',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            }
+        });
+        quoteId = await createCartResponse.json();
+        const retrieveCartResponse = await fetch(`${domain}/rest/V1/guest-carts/${quoteId}`);
+        const cart = await retrieveCartResponse.json();
+        const cartId = cart.id;
+
+        const addItemResponse = await fetch(`${domain}/rest/V1/guest-carts/${cartId}/items`, {
             method: 'POST',
             cache: 'no-cache',
             headers: {
@@ -19,17 +32,17 @@
             body: JSON.stringify({
                 cartItem: {
                   sku,
-                  qty: 1
+                  qty: 1,
+                  quote_id: quoteId
                 }
             }) 
         });
-        quoteId = await createCartResponse.json();
-        const retrieveCartResponse = await fetch(`${domain}/rest/V1/guest-carts/${quoteId}/items`);
-        return await retrieveCartResponse.json();
+
+        return await addItemResponse.json();
     }
 
-    const createOrder = async (chargeId) => {
-        const createOrderResponse = await fetch(`${domain}/order`, {
+    const setBillingAddress = async (address)=> {
+        const response = await fetch(`${domain}/rest/V1/guest-carts/${quoteId}/billing-address`, {
             method: 'POST',
             cache: 'no-cache',
             headers: {
@@ -37,16 +50,68 @@
                 'Authorization': `Bearer ${token}`,
             },
             body: JSON.stringify({
-                chargeId,
-                cartId
+                address
+            }) 
+        });
+        return await response.json();
+    }
+
+    const estimateShippingAddress = async (address)=> {
+        const response = await fetch(`${domain}/rest/V1/guest-carts/${quoteId}/estimate-shipping-methods`, {
+            method: 'POST',
+            cache: 'no-cache',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+                address
+            }) 
+        });
+        return await response.json();
+    }
+
+
+    const setShippingAddress = async (address, method_code, carrier_code)=> {
+        const response = await fetch(`${domain}/rest/V1/guest-carts/${quoteId}/shipping-information`, {
+            method: 'POST',
+            cache: 'no-cache',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+                addressInformation: {
+                    shippingAddress: address,
+                    shipping_method_code: method_code,
+                    shipping_carrier_code: carrier_code
+                }
+            }) 
+        });
+        return await response.json();
+    }
+
+    const createOrder = async (email) => {
+        const createOrderResponse = await fetch(`${domain}/rest/V1/guest-carts/${quoteId}/payment-information`, {
+            method: 'POST',
+            cache: 'no-cache',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+                email,
+                paymentMethod: {
+                    method: "zippayment"
+                }
             }) 
         });
         return createOrderResponse.json();
     }
 
     const openCheckoutModal = async (sku) => {
-        const cart = await retrieveCart(sku);
-        const item = cart.items[0];
+        overlay = document.createElement('div');
+        const item = await retrieveCartItem(sku);
         const url = new URL(checkoutUrl);
         
         for(key in item) {
@@ -79,7 +144,8 @@
             textAlign: 'center',
             paddingTop: '50px',
             overflow: 'hidden',
-            borderRadius: '10px'
+            borderRadius: '10px',
+            background: 'white'
         });
 
         var closeButton = document.createElement('img');
@@ -92,7 +158,7 @@
             position: 'absolute',
             top: '45px',
             right: '20px',
-            right: 'calc(50% - 195px)',
+            right: 'calc(50% - 240px)',
             cursor: 'pointer'
         });
         
@@ -135,8 +201,21 @@
 
     window.addEventListener('onmessage', ({ data }) => {
         switch(data.event) {
-            case 'complete':
-                createOrder();
+            case 'set_billing_address':
+                const address = data.address;
+                setBillingAddress(address);
+                break;
+            case 'estimate_shipping_address':
+                const address = data.address;
+                estimateShippingAddress(address);
+                break;
+            case 'set_shipping_address':
+                const address = data.address;
+                setShippingAddress(address);
+                break;
+            case 'place_order':
+                const email = data.email;
+                createOrder(email);
                 closeModal();
                 break;
             case 'cancel':
