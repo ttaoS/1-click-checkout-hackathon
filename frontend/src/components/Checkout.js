@@ -1,25 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
-import Card from '@material-ui/core/Card';
-import CardHeader from '@material-ui/core/CardHeader';
-import CardMedia from '@material-ui/core/CardMedia';
-import CardContent from '@material-ui/core/CardContent';
 import Avatar from '@material-ui/core/Avatar';
 import Chip from '@material-ui/core/Chip';
-import Typography from '@material-ui/core/Typography';
-import Grid from '@material-ui/core/Grid';
-import Paper from '@material-ui/core/Paper';
-import ButtonBase from '@material-ui/core/ButtonBase';
-import InputLabel from '@material-ui/core/InputLabel';
-import MenuItem from '@material-ui/core/MenuItem';
-import FormHelperText from '@material-ui/core/FormHelperText';
-import FormControl from '@material-ui/core/FormControl';
-import Select from '@material-ui/core/Select';
+import { Spinner } from '@zip/components';
+import { AppBar } from '@zip/components';
+import { Buttons } from '@zip/components';
+import { Lists, Icons } from '@zip/components';
+import { TextFields } from '@zip/components';
 
 const useStyles = makeStyles((theme) => ({
-    root: {
-        flexGrow: 1,
-    },
     avatar: {
         marginBottom: '20px'
     },
@@ -38,23 +27,43 @@ const useStyles = makeStyles((theme) => ({
         maxWidth: '100%',
         maxHeight: '100%',
     },
+    formControl: {
+        margin: theme.spacing(1),
+        minWidth: '100%',
+    },
+    welcomeSplashContainer: {
+        alignItems: 'center',
+        display: 'flex',
+        flexDirection: 'column',
+        height: '500px',
+        justifyContent: 'center'
+    },
+    checkoutLoading: {
+        margin: '5px',
+        textAlign: 'center',
+        width: '400px',
+        fontSize: '24px'
+    }
   }));
 
 const CheckoutPage = ({ sku, merchantDomain }) => {
     const [quoteId, setQuoteId] = useState(null);
-    const [item, setItem] = useState({ name: 'test', price: 20 });
+    const [product, setProduct] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [total, setTotal] = useState(null);
+
     const [addresses, setAddresses] = useState([]);
     const [shippingMethods, setShippingMethods] =  useState([]);
-    const [billingAddress, setBillingAddress] = useState(null);
-    const [shippingAddress, setShippingAddress] = useState(null);
-    const [shippingMethod, setShippingMethod] =  useState(null);
+    const [billingAddressKey, setBillingAddressKey] = useState(null);
+    const [shippingAddressKey, setShippingAddressKey] = useState(null);
+    const [shippingMethodKey, setShippingMethodKey] =  useState(null);
     const [customer, setCustomer] = useState(null);
     const classes = useStyles();
 
-    const token = "qr9u7c8goinkrvxksv54vthimr8ezjz2";
+    const token = "ff80ksbgubze87e04a9qlxz9xp42qyhk";
     const customerId = "5201314";
     const apiDomain = "https://zip-api-shipping.labs.au.edge.zip.co";
-    const merchantApiPostSettings = {
+    const postSettings = {
         method: 'POST',
         cache: 'no-cache',
         headers: {
@@ -63,23 +72,22 @@ const CheckoutPage = ({ sku, merchantDomain }) => {
         }
     };
 
-
     useEffect(() => {
         retrieveCartItem();
         retrieveAddresses();
         retrieveCustomerDetails();
-    });
+    }, []);
 
     const retrieveCartItem = async () => {
-        const createCartResponse = await fetch(`${merchantDomain}/rest/V1/guest-carts`, merchantApiPostSettings);
+        const createCartResponse = await fetch(`${merchantDomain}/rest/V1/guest-carts`, postSettings);
         const quoteId = await createCartResponse.json();
-        setQuoteId(quoteId);
+
         const retrieveCartResponse = await fetch(`${merchantDomain}/rest/V1/guest-carts/${quoteId}`);
         const cart = await retrieveCartResponse.json();
         const cartId = cart.id;
 
         const addItemResponse = await fetch(`${merchantDomain}/rest/V1/guest-carts/${cartId}/items`, {
-            ...merchantApiPostSettings,
+            ...postSettings,
             body: JSON.stringify({
                 cartItem: {
                 sku,
@@ -89,14 +97,16 @@ const CheckoutPage = ({ sku, merchantDomain }) => {
             }) 
         });
 
-        const item = addItemResponse.json();
-        setItem(item);
+        const product = await addItemResponse.json();
+        setProduct(product);
+        setQuoteId(quoteId);
+        setTotal(product.price);
     }
 
     const retrieveAddresses = async () => {
         const addressesResponse = await fetch(`${apiDomain}/shipping?customerId=${customerId}`);
-        const { shippingAddresses } = await addressesResponse.json();
-        setAddresses(shippingAddresses);
+        const { shippingAddresses: addresses } = await addressesResponse.json();
+        setAddresses(addresses);
     }
 
     const retrieveCustomerDetails = async () => {
@@ -105,41 +115,99 @@ const CheckoutPage = ({ sku, merchantDomain }) => {
         setCustomer(customer);
     }
 
-    const retrieveShippingMethods = async (address)=> {
+    const retrieveShippingMethods = async (addressKey)=> {
+        const { region, regionCode, regionId, countryId, addressLine1, postalCode, city } = addresses[addressKey];
+        const { phoneNumber, firstName, lastName } = customer;
         const shippingMethodsResponse = await fetch(`${merchantDomain}/rest/V1/guest-carts/${quoteId}/estimate-shipping-methods`, {
-            ...merchantApiPostSettings,
+            ...postSettings,
             body: JSON.stringify({
-                address
+                address: {
+                    region,
+                    region_code: regionCode,
+                    region_id: regionId,
+                    country_id: countryId,
+                    street: [
+                        addressLine1
+                    ],
+                    postcode: postalCode,
+                    city,
+                    telephone: phoneNumber,
+                    firstname: firstName,
+                    lastname: lastName
+                }
             }) 
         });
         const shippingMethods = await shippingMethodsResponse.json();
         setShippingMethods(shippingMethods);
     }
 
-    const createOrder = async () => {
+    const saveBillingAddress = async() => {
+        const { region, regionCode, regionId, countryId, addressLine1, postalCode, city } = addresses[billingAddressKey];
+        const { phoneNumber, firstName, lastName, email } = customer;
+
         // save billing address
         await fetch(`${merchantDomain}/rest/V1/guest-carts/${quoteId}/billing-address`, {
-            ...merchantApiPostSettings,
+            ...postSettings,
             body: JSON.stringify({
-                address: billingAddress
-            }) 
-        });
-
-        // save shipping address and method
-        await fetch(`${merchantDomain}/rest/V1/guest-carts/${quoteId}/shipping-information`, {
-            ...merchantApiPostSettings,
-            body: JSON.stringify({
-                addressInformation: {
-                    shippingAddress,
-                    shipping_method_code: shippingMethod.method_code,
-                    shipping_carrier_code: shippingMethod.carrier_code
+                address: {
+                    region,
+                    region_code: regionCode,
+                    region_id: regionId,
+                    country_id: countryId,
+                    street: [
+                        addressLine1
+                    ],
+                    postcode: postalCode,
+                    city,
+                    telephone: phoneNumber,
+                    firstname: firstName,
+                    lastname: lastName,
+                    email
                 }
             }) 
         });
+    }
+
+    const saveShippingAddress = async() => {
+        const { region, regionCode, regionId, countryId, addressLine1, postalCode, city } = addresses[shippingAddressKey];
+        const { phoneNumber, firstName, lastName } = customer;
+        const { method_code, carrier_code } = shippingMethods[shippingMethodKey];
+
+        // save billing address
+        await fetch(`${merchantDomain}/rest/V1/guest-carts/${quoteId}/shipping-information`, {
+            ...postSettings,
+            body: JSON.stringify({
+                addressInformation: {
+                    shippingAddress: {
+                        region,
+                        region_code: regionCode,
+                        region_id: regionId,
+                        country_id: countryId,
+                        street: [
+                            addressLine1
+                        ],
+                        postcode: postalCode,
+                        city,
+                        telephone: phoneNumber,
+                        firstname: firstName,
+                        lastname: lastName
+                    },
+                    shipping_method_code: method_code,
+                    shipping_carrier_code: carrier_code
+                }
+            }) 
+        });
+    }
+
+    const placeOrder = async () => {
+        setLoading(true);
+
+        await saveBillingAddress();
+        await saveShippingAddress();
 
         // create order
-        await fetch(`${merchantDomain}/rest/V1/guest-carts/${quoteId}/payment-information`, {
-            ...merchantApiPostSettings,
+        const orderReponse = await fetch(`${merchantDomain}/rest/V1/guest-carts/${quoteId}/payment-information`, {
+            ...postSettings,
             body: JSON.stringify({
                 email: customer.email,
                 paymentMethod: {
@@ -147,127 +215,132 @@ const CheckoutPage = ({ sku, merchantDomain }) => {
                 }
             }) 
         });
-    }
+        const orderId = await orderReponse.json();
 
-    const placeOrder = async () => {
+        // place order
+        const { region, addressLine1, postalCode, city } = addresses[shippingAddressKey];
         const response = await fetch(`${apiDomain}/order`, {
+            ...postSettings,
             body: JSON.stringify({
-                "Amount": 100,
-                "CheckoutId": "co_112312312",
-                "MerchantId": "m_123131321",
-                "CustomerId": customerId,
-                "OrderItems": [{
-                    "Name" : "World of Warcraft",
-                    "Amount" : 100
+                Amount: total,
+                OrderId: orderId,
+                CheckoutId: "co_112312312",
+                MerchantId: "m_123131321",
+                CustomerId: customerId,
+                OrderItems: [{
+                    Name : product.name,
+                    Amount : product.price
                 }],
-                "ShippingAddress": {
-                    "AddressLine1" : "7 George Street",
-                    "PostalCode" : "2010",
-                    "State" : "NSW",
-                    "Suburb" : "Sydney"
+                ShippingAddress: {
+                    AddressLine1: addressLine1,
+                    PostalCode: postalCode,
+                    State: region,
+                    Suburb: city
                 }
             })
         });
 
-        const order = await response.json();
+        const { ChargeId } = await response.json();
 
+        const isInIFrame = window.self !== window.top;
         // success
-        if (order.ChargeId) {
+        if (isInIFrame && ChargeId) {
             window.parent.postMessage(
                 {
                     event: 'complete',
-                    orderId: order.OrderId,
-                    chargeId: order.ChargeId,
+                    orderId: orderId,
+                    chargeId: ChargeId,
                 },
                 '*',
             );
         }
+
+        setLoading(false);
+    }
+
+    if (!quoteId) {
+        return <>
+                <div className={classes.welcomeSplashContainer}>
+                <div className={classes.checkoutLoading}>
+                    <Spinner />
+                </div>
+                <h1 className={classes.checkoutLoading}>Thanks for choosing Zip</h1>
+                <div className={classes.checkoutLoading}>We&apos;ll make this quick and easy</div>
+            </div>
+        </>
     }
 
     return (
-        <div className={classes.root}>
+        <>
+            <AppBar endAdornment={<div style={{
+                textAlign: 'right'
+                }}>{ product && `$${total}` }</div>} startAdornment={
+                    customer && <Chip avatar={<Avatar src="https://zip.co/assets/zip/core-icons/user.svg" />} label={`${customer.firstName} ${customer.lastName}`} />
+                } />
+
             {
-                customer && <Chip className={classes.avatar} avatar={<Avatar src="https://zip.co/assets/zip/core-icons/user.svg" />} label={`${customer.firstName} ${customer.lastName} (${customer.email})`} />
+                product && 
+                  <Lists.Basic style={{ display: 'inline-table' }} items={[
+                    product && {
+                            primary: `${product.name} $${product.price}`,
+                            secondary: `SKU #: ${sku}`,
+                            icon: Icons.Cart
+                    },
+                    customer && {
+                        primary: `${customer.firstName} ${customer.lastName}`,
+                        secondary: `Email: ${customer.email}`,
+                        icon: Icons.EmptyProfile
+                      }
+                ]} />
             }
-            {
-                item && 
-                <Paper className={classes.paper}>
-                    <Grid container spacing={2}>
-                        <Grid item xs={12} sm container>
-                            <Grid item xs container direction="column" spacing={2}>
-                            <Grid item xs>
-                                <Typography gutterBottom variant="subtitle1">
-                                { item.name }
-                                </Typography>
-                                <Typography variant="body2" color="textSecondary">
-                                SKU: {sku}
-                                </Typography>
-                            </Grid>
-                            </Grid>
-                            <Grid item>
-                            <Typography variant="subtitle1">${item.price}</Typography>
-                            </Grid>
-                        </Grid>
-                    </Grid>
-                </Paper>
-            }
+
+
             {
                 addresses.length > 0 && 
-                <Paper className={classes.paper}>
-                    <Grid container spacing={2}>
-                        <FormControl className={classes.formControl}>
-                            <InputLabel id="billing-address">Billing Address</InputLabel>
-                            <Select
-                                labelId="billing-address"
-                                value={addresses[0]}
-                                onChange={(event) => setBillingAddress(addresses[event.target.value])}
-                            >
-                                {addresses.map(({addressLine1, regionCode}, index) => {
-                                    return <MenuItem value={index}>{`${addressLine1} ${regionCode}`}</MenuItem>
-                                })}
-                            </Select>
-                        </FormControl>
-                    </Grid>
+                <>
+                    <TextFields.Select label="Billing Address" onChange={event => setBillingAddressKey(event.target.value)} options={
+                        addresses.map(({addressLine1, regionCode}, index) => {
+                            return {
+                                value: index,
+                                label: `${addressLine1} ${regionCode}`
+                            };
+                        })
+                    } value={billingAddressKey} />
 
-                    <Grid container spacing={2}>
-                        <FormControl className={classes.formControl}>
-                            <InputLabel id="shipping-address">Shipping Address</InputLabel>
-                            <Select
-                                labelId="shipping-address"
-                                value={addresses[0]}
-                                onChange={(event) => { 
-                                    setShippingAddress(addresses[event.target.value]);
-                                    retrieveShippingMethods();
-                                }}
-                            >
-                            {addresses.map(({addressLine1, regionCode}, index) => {
-                                return <MenuItem value={index}>{`${addressLine1} ${regionCode}`}</MenuItem>
-                            })}
-                            </Select>
-                        </FormControl>
-                    </Grid>
+                    <TextFields.Select label="Shipping Address" onChange={event => { 
+                        setShippingAddressKey(event.target.value);
+                        retrieveShippingMethods(event.target.value);
+                    }} options={
+                        addresses.map(({addressLine1, regionCode}, index) => {
+                            return {
+                                value: index,
+                                label: `${addressLine1} ${regionCode}`
+                            };
+                        })
+                    } value={shippingAddressKey} />
 
                     {
-                        shippingMethods.length > 0 &&
-                        <Grid container spacing={2}>
-                            <FormControl className={classes.formControl}>
-                                <InputLabel id="shipping-methods">Shipping Methods</InputLabel>
-                                <Select
-                                    labelId="shipping-methods"
-                                    value={shippingMethods[0]}
-                                    onChange={(event) => setShippingMethod(event.target.value)}
-                                >
-                                {shippingMethods.map(({carrier_title, method_code}, index) => {
-                                    return <MenuItem value={method_code}>{carrier_title}</MenuItem>
-                                })}
-                                </Select>
-                            </FormControl>
-                        </Grid>
+                        shippingMethods.length > 0 && <TextFields.Select label="Shipping Method" onChange={event => {
+                            setShippingMethodKey(event.target.value);
+                            const shippingAmount = shippingMethods[event.target.value].amount;
+                            setTotal(product.price + shippingAmount);
+                        }} options={
+                            shippingMethods.map(({carrier_title}, index) => {
+                                return {
+                                    value: index,
+                                    label: carrier_title
+                                };
+                            })
+                        } value={shippingMethodKey} />
                     }
-                </Paper>
+                </>
             }
-            <button type="button" class="btn btn-primary" onClick={placeOrder}>Primary</button>
-        </div>
+
+            
+             <Buttons.Primary onClick={placeOrder} loading={loading}>
+                Place Order
+              </Buttons.Primary>
+        </>
     );
 };
 

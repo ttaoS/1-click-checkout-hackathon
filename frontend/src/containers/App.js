@@ -7,21 +7,20 @@ import {
     Route
 } from "react-router-dom";
 import Home from "./Home";
+import { Global, ThemeProvider } from '@zip/components';
 
 class App extends Component {
     render() {
         return <>
-            <div className={classes(styles.appBody, [styles.padded, true])}>
+            <ThemeProvider>
+                <Global />
                 <Router>
                 <Switch>
                     <Route exact path="/" component={Home}>
                     </Route>
-                    <Route exact path="/test">
-                        <>test</>
-                    </Route>
                 </Switch>
                 </Router>
-            </div>
+            </ThemeProvider>
         </>;
     };
 };
