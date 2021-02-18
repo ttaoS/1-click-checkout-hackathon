@@ -2,7 +2,7 @@
 
     const domain = location.origin;
     const token = "qr9u7c8goinkrvxksv54vthimr8ezjz2";
-    const checkoutUrl = "https://zip.co";
+    const checkoutUrl = "http://1-click-checkout.s3-website-ap-southeast-2.amazonaws.com";
 
     const widget = document.getElementById("zip-it-widget");
     const overlay = ddocument.createElement('div');
