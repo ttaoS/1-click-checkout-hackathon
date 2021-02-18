@@ -1,122 +1,13 @@
 (function () {
-
-    const domain = location.origin;
-    const token = "qr9u7c8goinkrvxksv54vthimr8ezjz2";
     const checkoutUrl = "http://1-click-checkout.s3-website-ap-southeast-2.amazonaws.com";
 
     const widget = document.getElementById("zip-it-widget");
     let overlay = document.createElement('div');
-    let quoteId = null;
-
-    const retrieveCartItem = async (sku) => {
-        const createCartResponse = await fetch(`${domain}/rest/V1/guest-carts`, {
-            method: 'POST',
-            cache: 'no-cache',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            }
-        });
-        quoteId = await createCartResponse.json();
-        const retrieveCartResponse = await fetch(`${domain}/rest/V1/guest-carts/${quoteId}`);
-        const cart = await retrieveCartResponse.json();
-        const cartId = cart.id;
-
-        const addItemResponse = await fetch(`${domain}/rest/V1/guest-carts/${cartId}/items`, {
-            method: 'POST',
-            cache: 'no-cache',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-                cartItem: {
-                  sku,
-                  qty: 1,
-                  quote_id: quoteId
-                }
-            }) 
-        });
-
-        return await addItemResponse.json();
-    }
-
-    const setBillingAddress = async (address)=> {
-        const response = await fetch(`${domain}/rest/V1/guest-carts/${quoteId}/billing-address`, {
-            method: 'POST',
-            cache: 'no-cache',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-                address
-            }) 
-        });
-        return await response.json();
-    }
-
-    const estimateShippingAddress = async (address)=> {
-        const response = await fetch(`${domain}/rest/V1/guest-carts/${quoteId}/estimate-shipping-methods`, {
-            method: 'POST',
-            cache: 'no-cache',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-                address
-            }) 
-        });
-        return await response.json();
-    }
-
-
-    const setShippingAddress = async (address, method_code, carrier_code)=> {
-        const response = await fetch(`${domain}/rest/V1/guest-carts/${quoteId}/shipping-information`, {
-            method: 'POST',
-            cache: 'no-cache',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-                addressInformation: {
-                    shippingAddress: address,
-                    shipping_method_code: method_code,
-                    shipping_carrier_code: carrier_code
-                }
-            }) 
-        });
-        return await response.json();
-    }
-
-    const createOrder = async (email) => {
-        const createOrderResponse = await fetch(`${domain}/rest/V1/guest-carts/${quoteId}/payment-information`, {
-            method: 'POST',
-            cache: 'no-cache',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-                email,
-                paymentMethod: {
-                    method: "zippayment"
-                }
-            }) 
-        });
-        return createOrderResponse.json();
-    }
 
     const openCheckoutModal = async (sku) => {
         overlay = document.createElement('div');
-        const item = await retrieveCartItem(sku);
+        url.searchParams.append('sku', sku);
         const url = new URL(checkoutUrl);
-        
-        for(key in item) {
-            url.searchParams.append(key, item[key]);
-        }
 
         Object.assign(overlay.style, {
             position: 'absolute',
@@ -201,22 +92,10 @@
 
     window.addEventListener('onmessage', ({ data }) => {
         switch(data.event) {
-            case 'set_billing_address':
-                const address = data.address;
-                setBillingAddress(address);
-                break;
-            case 'estimate_shipping_address':
-                const address = data.address;
-                estimateShippingAddress(address);
-                break;
-            case 'set_shipping_address':
-                const address = data.address;
-                setShippingAddress(address);
-                break;
-            case 'place_order':
-                const email = data.email;
-                createOrder(email);
+            case 'complete':
+                const orderId = data.order_id;
                 closeModal();
+                location.assign(`checkout/onepage/success/?order_id=${orderId}`);
                 break;
             case 'cancel':
                 closeModal();

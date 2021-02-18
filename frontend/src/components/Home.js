@@ -1,5 +1,4 @@
 import React from 'react';
-import bootstrap from 'bootstrap';
 import headerStyles from '../css/header.module.css';
 import labelValueStyles from '../css/label-value.module.css';
 import inputStyles from '../css/input-text.module.css';
