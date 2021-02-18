@@ -1,0 +1,69 @@
+* {
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+}
+
+
+:root {
+    font-family: 'Museo Sans', Foco, Arial, sans-serif;
+    font-size: 10px;
+
+    display: flex;
+    flex-direction: column;
+
+    /* Using height with any unit (%, vh, px, whatever) somehow mucks up flex layout in Safari/webkit.
+    // mucks up => height became zero for headerbar (only space taken was for padding).
+    // why? I am not sure, but the reason lies here: https://stackoverflow.com/a/33644245
+    // It also recommends to go flex all the way.
+    // Note that min-height/max-height is fine.
+    // In any case, semantically our use case is for min-height to take up full screen height.
+    */
+    min-height: 100vh;
+
+    --header-height: 70px;
+    --footer-height: 50px;
+
+    --secondary-button-height: 18px;
+
+    --input-box-height: 3.5rem;
+    --dropdown-max-height: 35rem;
+
+    --opacity-on-hover: 0.85;
+}
+
+body {
+    flex: 1;
+
+    display: flex;
+    flex-direction: column;
+}
+
+#root {
+    flex: 1;
+
+    display: flex;
+    flex-direction: column;
+
+    font-size: 1.6rem;
+}
+
+/* #root has 4 children laid out in App.render:
+// 1 - fonts
+// 2 - header
+// 3 - content
+// 4 - footer (if present)
+// so provide all available free space to content section (3rd). */
+
+
+#root > *:nth-child(2) {
+    /* Because the header position is fixed, we have to offset the main body appropriately.
+     * So fix the height of the menu bar, and apply the same amount of margin to the main body. */
+    margin-top: var(--header-height); /* to offset header */
+    margin-bottom: var(--footer-height); /* to offset footer */
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+

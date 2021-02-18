@@ -1,0 +1,12 @@
+.appBody {
+    flex: 1;
+    position: relative;
+}
+
+.padded {
+    padding: 20px;
+}
+
+.appBody > :first-child {
+    flex: 1;
+}

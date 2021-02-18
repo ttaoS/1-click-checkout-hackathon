@@ -1,0 +1,29 @@
+@font-face {
+    font-family: 'Foco';
+    src: local('Foco'), url('../static/fonts/foco/Foco_Lt.ttf') format('truetype');
+    font-weight: 300;
+}
+
+@font-face {
+    font-family: 'Foco';
+    src: local('Foco'), url('../static/fonts/foco/Foco_Rg.ttf') format('truetype');
+    font-weight: 500;
+}
+
+@font-face {
+    font-family: 'Foco';
+    src: local('Foco'), url('../static/fonts/foco/Foco_Bd.ttf') format('truetype');
+    font-weight: 700;
+}
+
+@font-face {
+    font-family: 'Museo Sans';
+    src: local('Museo Sans'), url('../static/fonts/museo-sans/MuseoSans_300-webfont.woff2') format('woff2'), url('../static/fonts/museo-sans/MuseoSans_300-webfont.woff') format('woff');
+    font-weight: 300;
+}
+
+@font-face {
+    font-family: 'Museo Sans';
+    src: local('Museo Sans'), url('../static/fonts/museo-sans/MuseoSans_500-webfont.woff2') format('woff2'), url('../static/fonts/museo-sans/MuseoSans_500-webfont.woff') format('woff');
+    font-weight: 500;
+}

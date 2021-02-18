@@ -1,0 +1,63 @@
+.labelValueSet > *:not(:last-child) {
+    margin-bottom: 15px;
+}
+
+.labelValuePair {
+    display: flex;
+    flex-direction: column;
+}
+
+.labelValuePair > *:not(:last-child) {
+    margin-bottom: 3px;
+}
+
+.label {
+    margin-bottom: 3px;
+}
+
+.helpLabel {
+    font-size: 1.5rem;
+    font-weight: 300;
+}
+
+.multilineLabel {
+    display: flex;
+    flex-direction: column;
+}
+
+.multilineLabel > * {
+    margin-bottom: 3px;
+}
+
+.val {
+    display: flex;
+    align-items: center;
+    border: none;
+    border-radius: 5px;
+    padding: 0 0 0 10px;
+    min-height: var(--input-box-height);
+}
+
+.value {
+    composes: val;
+    height: auto; /* to allow wrapped multiline */
+    background-color: #DCDCDF80;
+}
+
+.multiLineValue {
+    composes: value;
+    white-space: pre-wrap;
+    padding: 10px;
+}
+
+.labelInputPair {
+    composes: labelValuePair;
+}
+
+.labelInputPair.invalid label {
+    color: #951B1E;
+}
+
+.labelInputPair.invalid input {
+    box-shadow: inset 0 0 2px 1px #951B1E;
+}

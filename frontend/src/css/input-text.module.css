@@ -1,0 +1,48 @@
+.root {
+    composes: val from './label-value.module.css';
+
+    /* 1. For a flex-container with a flex-direction: row, default min-width of each of its flex item/child is auto.
+    //    For a flex-container with a flex-direction: column, default *min-height* of each of its flex item/child is auto.
+    //    So a flex item cannot be *smaller than the size* of its content *along* the main axis of the container.
+    // 1a.flex-grow/shrink works like this: initial width is given to the flex-item as at least min-width(=size of the content of the flex-item),
+    //    then any spare space is allocated.
+    //    So the initial width of a flex-item pretty much does not care about the width of the flex-container.
+    // 2. The browser automatically gives the input a default width x.
+    //    So if an input is a flex item for container with f-d:row, the minimum width of that item is equal to x,
+    //    regardless of flex container width. flex-grow works So it may overflow.
+    // If min-width on that flex-item is set to 0, then the constraint of minimum width as equal to content size is gone,
+    // and the flex-item will respect the size of the flex-container.
+    // src: https://stackoverflow.com/a/42421490/663911
+    // */
+    min-width: 0; /* when input is a flex-item, which by default wouldn't shrink beneath initial content size. */
+    width: 100%; /* override browser's default width, which varies across browsers. */
+    height: var(--input-box-height);
+    border: 1px solid transparent;
+    border-top: none;
+    border-bottom: 1px solid #DDD;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.39);
+}
+
+.root::placeholder {
+    color: black;
+}
+
+.root:hover {
+    box-shadow: inset 0 0 1px 1px #4C9E00;
+}
+
+.root:focus {
+    box-shadow: none;
+    border: 2px solid #4C9E00;
+}
+
+.root:disabled {
+    background-color: #DCDCDF;
+    box-shadow: none;
+}
+
+.multiLine {
+    composes: root;
+    padding: 10px;
+    min-height: 10rem;
+}
