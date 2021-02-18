@@ -3,7 +3,6 @@ import labelValueStyles from '../css/label-value.module.css';
 import inputStyles from '../css/input-text.module.css';
 
 const ShoppingCart = (props) => {
-    const header = <p >Shopping cart:</p>;
     const sku =
         <label>
             <span className={labelValueStyles.label}>sku</span>
@@ -44,8 +43,6 @@ const ShoppingCart = (props) => {
 
     return (
         <div>
-            {header}
-            <br></br>
             {name}
             {sku}
             {quantity}

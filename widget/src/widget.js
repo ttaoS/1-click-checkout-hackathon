@@ -5,8 +5,8 @@
     const checkoutUrl = "http://1-click-checkout.s3-website-ap-southeast-2.amazonaws.com";
 
     const widget = document.getElementById("zip-it-widget");
-    const overlay = ddocument.createElement('div');
-    const quoteId = null;
+    const overlay = document.createElement('div');
+    let quoteId = null;
 
     const retrieveCart = async (sku) => {
         const createCartResponse = await fetch(`${domain}/rest/V1/guest-carts`, {
@@ -23,9 +23,9 @@
                 }
             }) 
         });
-        quoteId = createCartResponse.json();
+        quoteId = await createCartResponse.json();
         const retrieveCartResponse = await fetch(`${domain}/rest/V1/guest-carts/${quoteId}/items`);
-        return retrieveCartResponse.json();
+        return await retrieveCartResponse.json();
     }
 
     const createOrder = async (chargeId) => {
@@ -125,7 +125,7 @@
         iframe.addEventListener('load', () => {
             iframe.contentDocument.documentElement.innerHTML = html;
             iframe.contentWindow.addEventListener('click', () => {
-                const sku = "24-MG04";
+                const sku = document.querySelector('[itemprop="sku"]').innerText;
                 openCheckoutModal(sku);
             });
         });
