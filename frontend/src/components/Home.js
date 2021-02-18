@@ -1,13 +1,26 @@
-import React from 'react';
-import bootstrap from 'bootstrap';
-import headerStyles from '../css/header.module.css';
+import React, {useState} from 'react';
 import labelValueStyles from '../css/label-value.module.css';
 import inputStyles from '../css/input-text.module.css';
 import ShoppingCart from "./ShoppingCart";
+import {FormControl, Input, InputLabel, makeStyles, MenuItem, Select} from "@material-ui/core";
+
+const useStyles = makeStyles((theme) => ({
+    formControl: {
+        margin: theme.spacing(1)
+    },
+    selectEmpty: {
+        marginTop: theme.spacing(2),
+    },
+}));
 
 const HomePage = (props) => {
     const customerId = "5201314";
     const customerHeader = <p>Customer info:</p>;
+    const classes = useStyles();
+    let [address, setAddress] =  useState({});
+    const handleAddressChange = (event) => {
+        setAddress(event.target.value);
+    };
     const nameInput =
         <label>
             <span className={labelValueStyles.label}>Name</span>
@@ -22,37 +35,51 @@ const HomePage = (props) => {
             <span className={labelValueStyles.label}>Email</span>
             <input type='text'
                    name='email'
-                   value='test'
+                   value={props.data.email}
                    className={inputStyles.root}
             />
         </label>;
+    
     const shippingAddressInput =
-        <label>
-            <span className={labelValueStyles.label}>Shipping address</span>
-            <input type='text'
-                   name='shippingAddress'
-                   value={props.data.shippingAddress}
-                   className={inputStyles.root}
-            />
-        </label>;
+        <>
+            <FormControl className={classes.formControl}>
+                <InputLabel id="shipping-address-label">Shipping Address</InputLabel>
+                <Select
+                    labelId="shipping-address-label"
+                    id="shipping-address"
+                    value={address}
+                    onChange={handleAddressChange}
+                    input={<Input />}
+                >
+                    {props.data.shippingAddress.map((address, indexx) => (
+                        <MenuItem key={indexx} value={address}>
+                            {address.addressLine1 + " " + address.addressLine2 + " " + address.city + " "  + address.postalCode + " " + address.regionCode}
+                        </MenuItem>
+                    ))}
+                </Select>
+            </FormControl>
+        </>
+
 
     const placeOrder = async () => {
         const response = await fetch("https://zip-api-shipping.labs.au.edge.zip.co/order", {
+            method: 'POST',
+            cache: 'no-cache',
+            headers: {
+                'Content-Type': 'application/json'
+            },
             body: JSON.stringify({
-                "Amount": 100,
-                "CheckoutId": "co_112312312",
-                "MerchantId": "m_123131321",
+                "Amount": props.data.shoppingCart.price,
+                "CheckoutId": "co_cvqado1012m11",
+                "MerchantId": "m_iuqnooihqwe12",
                 "CustomerId": customerId,
                 "OrderItems": [{
-                    "Name" : "World of Warcraft",
-                    "Amount" : 100
+                    "Name" :  props.data.shoppingCart.name,
+                    "Amount" :  props.data.shoppingCart.price,
+                    "Sku" :  props.data.shoppingCart.sku,
+                    "Quantity" :  props.data.shoppingCart.quantity
                 }],
-                "ShippingAddress": {
-                    "AddressLine1" : "7 George Street",
-                    "PostalCode" : "2010",
-                    "State" : "NSW",
-                    "Suburb" : "Sydney"
-                }
+                "ShippingAddress": address
             })
         });
 
@@ -75,7 +102,7 @@ const HomePage = (props) => {
 
     return (
         <>
-            <ShoppingCart data={props.data.shoppingCart}/>
+            <ShoppingCart data={{...props.data.shoppingCart, shippingAddress: props.data.shippingAddress}}/>
             <hr></hr>
             <br></br>
             {customerHeader}
