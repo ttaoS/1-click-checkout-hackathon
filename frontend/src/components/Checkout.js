@@ -71,10 +71,14 @@ const CheckoutPage = ({ sku, merchantDomain, qty, attributes }) => {
         }
     };
 
-    useEffect(() => {
-        retrieveCartItem();
-        retrieveAddresses();
-        retrieveCustomerDetails();
+    useEffect( () => {
+        Promise.all([retrieveCartItem(), retrieveAddresses(), retrieveCustomerDetails()])
+            .then(async values => {
+                let addressObj =   values[1];
+                let customer =  values[2];
+                let quoteId =  values[0];
+            await retrieveShippingMethods(addressObj.defaultAddressKey, addressObj.addresses, customer, quoteId);
+        })
     }, []);
 
     const retrieveCartItem = async () => {
@@ -87,7 +91,7 @@ const CheckoutPage = ({ sku, merchantDomain, qty, attributes }) => {
 
         const cartItem = {
             sku,
-            qty,
+            qty: 1,
             quote_id: quoteId
         };
 
@@ -114,24 +118,40 @@ const CheckoutPage = ({ sku, merchantDomain, qty, attributes }) => {
         setProduct(product);
         setQuoteId(quoteId);
         setTotal(product.price * product.qty);
+        return quoteId;
     }
 
     const retrieveAddresses = async () => {
         const addressesResponse = await fetch(`${apiDomain}/shipping?customerId=${customerId}`);
         const { shippingAddresses: addresses } = await addressesResponse.json();
-        setAddresses(addresses);
+        if(addresses && addresses.length > 0){
+            setAddresses(addresses);
+            const defaultAddressKey = addresses.findIndex(ad => ad.isPrefer === true) || 0;
+            setShippingAddressKey(defaultAddressKey);
+            setBillingAddressKey(defaultAddressKey);
+            return {
+                defaultAddressKey: defaultAddressKey,
+                addresses: addresses
+            }; 
+        }
+        setAddresses([]);
+        return undefined;
     }
 
     const retrieveCustomerDetails = async () => {
         const customerResponse = await fetch(`${apiDomain}/customer?customerId=${customerId}`);
         const customer = await customerResponse.json();
         setCustomer(customer);
+        return customer;
     }
 
-    const retrieveShippingMethods = async (addressKey)=> {
-        const { region, regionCode, regionId, countryId, addressLine1, postalCode, city } = addresses[addressKey];
-        const { phoneNumber, firstName, lastName } = customer;
-        const shippingMethodsResponse = await fetch(`${merchantDomain}/rest/V1/guest-carts/${quoteId}/estimate-shipping-methods`, {
+    const retrieveShippingMethods = async (addressKey, passAddresses, passCustomer, passQuoteId)=> {
+        const targetAddresses = passAddresses || addresses;
+        const targetCustomer = passCustomer || customer;
+        const targetQuoteId = passQuoteId || quoteId;
+        const { region, regionCode, regionId, countryId, addressLine1, postalCode, city } = targetAddresses[addressKey];
+        const { phoneNumber, firstName, lastName } = targetCustomer;
+        const shippingMethodsResponse = await fetch(`${merchantDomain}/rest/V1/guest-carts/${targetQuoteId}/estimate-shipping-methods`, {
             ...postSettings,
             body: JSON.stringify({
                 address: {
