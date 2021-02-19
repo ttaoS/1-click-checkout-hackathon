@@ -11,12 +11,13 @@
             if (key.includes('super_attribute')) { // how to check "exist" is true ?
               const id = key.match(/(\d)+/gm)[0];
 
-              if (!newObj['attribues']) {
-                newObj['attribues'] = [];
+              if (!newObj['attributes']) {
+                newObj['attributes'] = [];
               }
 
-              newObj['attribues'].push({
-                  [id]: val
+              newObj['attributes'].push({
+                  id,
+                  value: val
               })
             }
 

@@ -59,7 +59,7 @@ const CheckoutPage = ({ sku, merchantDomain, qty, attributes }) => {
     const [customer, setCustomer] = useState(null);
     const classes = useStyles();
 
-    const token = "ff80ksbgubze87e04a9qlxz9xp42qyhk";
+    const token = "qr9u7c8goinkrvxksv54vthimr8ezjz2";
     const customerId = "5201314";
     const apiDomain = "https://zip-api-shipping.labs.au.edge.zip.co";
     const postSettings = {
@@ -85,14 +85,16 @@ const CheckoutPage = ({ sku, merchantDomain, qty, attributes }) => {
         const cart = await retrieveCartResponse.json();
         const cartId = cart.id;
 
-        const carItem = {
+        const cartItem = {
             sku,
-            qty: 1,
+            qty,
             quote_id: quoteId
         };
 
+        console.log(attributes);
+
         if (attributes) {
-            carItem['product_option'] = {
+            cartItem['product_option'] = {
                 extension_attributes: {
                   configurable_item_options: attributes.map(({id, value}) => {
                     return {
@@ -106,14 +108,14 @@ const CheckoutPage = ({ sku, merchantDomain, qty, attributes }) => {
         const addItemResponse = await fetch(`${merchantDomain}/rest/V1/guest-carts/${cartId}/items`, {
             ...postSettings,
             body: JSON.stringify({
-                carItem
+                cartItem
             }) 
         });
 
         const product = await addItemResponse.json();
         setProduct(product);
         setQuoteId(quoteId);
-        setTotal(product.price);
+        setTotal(product.price * product.qty);
     }
 
     const retrieveAddresses = async () => {
@@ -316,7 +318,7 @@ const CheckoutPage = ({ sku, merchantDomain, qty, attributes }) => {
                 product && 
                   <Lists.Basic style={{ display: 'inline-table' }} items={[
                     product && {
-                            primary: `${product.name} X ${qty} $${product.price}`,
+                            primary: `${product.name} $${product.price} X ${qty}`,
                             secondary: `SKU #: ${sku}`,
                             icon: Icons.Cart
                     },
@@ -357,7 +359,7 @@ const CheckoutPage = ({ sku, merchantDomain, qty, attributes }) => {
                         shippingMethods.length > 0 && <TextFields.Select label="Shipping Method" onChange={event => {
                             setShippingMethodKey(event.target.value);
                             const shippingAmount = shippingMethods[event.target.value].amount;
-                            setTotal(product.price + shippingAmount);
+                            setTotal(product.price * product.qty + shippingAmount);
                         }} options={
                             shippingMethods.map(({carrier_title, amount}, index) => {
                                 return {
