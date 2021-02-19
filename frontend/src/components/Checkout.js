@@ -41,6 +41,9 @@ const useStyles = makeStyles((theme) => ({
         textAlign: 'center',
         width: '400px',
         fontSize: '24px'
+    },
+    productList: {
+        display: 'content'
     }
   }));
 
@@ -314,7 +317,7 @@ const CheckoutPage = ({ sku, merchantDomain, qty, attributes }) => {
 
             {
                 product && 
-                  <Lists.Basic style={{ display: 'content' }} items={[
+                  <Lists.Basic className={classes.productList} items={[
                     product && {
                             primary: `${product.name} $${product.price} X ${qty}`,
                             secondary: `SKU #: ${sku}`,
