@@ -54,7 +54,7 @@ body {
 
 #root {
     flex: 1;
-
+    padding-bottom: 20px;
     display: flex;
     flex-direction: column;
 
