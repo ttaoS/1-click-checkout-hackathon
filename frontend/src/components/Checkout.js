@@ -91,8 +91,6 @@ const CheckoutPage = ({ sku, merchantDomain, qty, attributes }) => {
             quote_id: quoteId
         };
 
-        console.log(attributes);
-
         if (attributes) {
             cartItem['product_option'] = {
                 extension_attributes: {
@@ -316,7 +314,7 @@ const CheckoutPage = ({ sku, merchantDomain, qty, attributes }) => {
 
             {
                 product && 
-                  <Lists.Basic style={{ display: 'inline-table' }} items={[
+                  <Lists.Basic style={{ display: 'content' }} items={[
                     product && {
                             primary: `${product.name} $${product.price} X ${qty}`,
                             secondary: `SKU #: ${sku}`,
