@@ -44,7 +44,7 @@ const useStyles = makeStyles((theme) => ({
     }
   }));
 
-const CheckoutPage = ({ sku, merchantDomain }) => {
+const CheckoutPage = ({ sku, merchantDomain, qty, attributes }) => {
     const [quoteId, setQuoteId] = useState(null);
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -85,14 +85,28 @@ const CheckoutPage = ({ sku, merchantDomain }) => {
         const cart = await retrieveCartResponse.json();
         const cartId = cart.id;
 
+        const carItem = {
+            sku,
+            qty: 1,
+            quote_id: quoteId
+        };
+
+        if (attributes) {
+            carItem['product_option'] = {
+                extension_attributes: {
+                  configurable_item_options: attributes.map(({id, value}) => {
+                    return {
+                        option_id: id, 
+                        option_value: value
+                     };
+                  })
+                }
+             };
+        }
         const addItemResponse = await fetch(`${merchantDomain}/rest/V1/guest-carts/${cartId}/items`, {
             ...postSettings,
             body: JSON.stringify({
-                cartItem: {
-                sku,
-                qty: 1,
-                quote_id: quoteId
-                }
+                carItem
             }) 
         });
 
@@ -198,12 +212,7 @@ const CheckoutPage = ({ sku, merchantDomain }) => {
         });
     }
 
-    const placeOrder = async () => {
-        setLoading(true);
-
-        await saveBillingAddress();
-        await saveShippingAddress();
-
+    const createOrder = async () => {
         // create order
         const orderReponse = await fetch(`${merchantDomain}/rest/V1/guest-carts/${quoteId}/payment-information`, {
             ...postSettings,
@@ -215,10 +224,22 @@ const CheckoutPage = ({ sku, merchantDomain }) => {
             }) 
         });
         const orderId = await orderReponse.json();
+        return orderId;
+    }
+
+    const wait = (ms, value = {}) => new Promise((resolve) => setTimeout(resolve, ms, value));
+
+    const placeOrder = async () => {
+        setLoading(true);
+
+        await saveBillingAddress();
+        await saveShippingAddress();
+
+        const orderId = await createOrder();
 
         // place order
         const { region, addressLine1, postalCode, city } = addresses[shippingAddressKey];
-        const response = await fetch(`${apiDomain}/order`, {
+        await fetch(`${apiDomain}/order`, {
             ...postSettings,
             body: JSON.stringify({
                 Amount: total,
@@ -239,38 +260,35 @@ const CheckoutPage = ({ sku, merchantDomain }) => {
             })
         });
 
-        const { ChargeId } = await response.json();
+        setLoading(false);
+        setSuccess(true);
+
+        await wait(2000);
 
         const isInIFrame = window.self !== window.top;
         // success
-        if (isInIFrame && ChargeId) {
-            console.log('send message');
+        if (isInIFrame) {
+            console.log('send message', orderId);
             window.parent.postMessage(
                 {
                     name: 'zip_it',
                     event: 'complete',
-                    orderId: orderId,
-                    chargeId: ChargeId,
+                    orderId: orderId
                 },
                 '*',
             );
-        }
-
-        setLoading(false);
-        setSuccess(true);
-
-        setTimeout(() => {
+        } else {
             window.location.replace(`${merchantDomain}/checkout/onepage/success/?order_id=${orderId}`);
-        }, 500)
+        }
     }
 
     if (success) {
         return <>
                 <div className={classes.welcomeSplashContainer}>
                 <div className={classes.checkoutLoading}>
-                    <Spinner />
+                    <Icons.ZipLogo size="50" />
                 </div>
-                <h1 className={classes.checkoutLoading}>Thanks for choosing Zip</h1>
+                <h1 className={classes.checkoutLoading}>Order been placed successfully</h1>
                 <div className={classes.checkoutLoading}>We&apos;ll redirect you to the merchant site</div>
             </div>
         </>
@@ -280,9 +298,9 @@ const CheckoutPage = ({ sku, merchantDomain }) => {
         return <>
                 <div className={classes.welcomeSplashContainer}>
                 <div className={classes.checkoutLoading}>
-                    <Icons.ZipLogo size="50" />
+                    <Spinner />
                 </div>
-                <h1 className={classes.checkoutLoading}>Order been placed successfully</h1>
+                <h1 className={classes.checkoutLoading}>Thanks for choosing Zip</h1>
                 <div className={classes.checkoutLoading}>We&apos;ll make this quick and easy</div>
             </div>
         </>
@@ -298,7 +316,7 @@ const CheckoutPage = ({ sku, merchantDomain }) => {
                 product && 
                   <Lists.Basic style={{ display: 'inline-table' }} items={[
                     product && {
-                            primary: `${product.name} $${product.price}`,
+                            primary: `${product.name} X ${qty} $${product.price}`,
                             secondary: `SKU #: ${sku}`,
                             icon: Icons.Cart
                     },
@@ -341,10 +359,10 @@ const CheckoutPage = ({ sku, merchantDomain }) => {
                             const shippingAmount = shippingMethods[event.target.value].amount;
                             setTotal(product.price + shippingAmount);
                         }} options={
-                            shippingMethods.map(({carrier_title}, index) => {
+                            shippingMethods.map(({carrier_title, amount}, index) => {
                                 return {
                                     value: index,
-                                    label: carrier_title
+                                    label: `${carrier_title} $${amount}`
                                 };
                             })
                         } value={shippingMethodKey} />

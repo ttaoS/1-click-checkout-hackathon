@@ -4,13 +4,43 @@
     const widget = document.getElementById("zip-it-widget");
     let overlay = document.createElement('div');
 
-    const openCheckoutModal = async (sku) => {
+    const getProductAttributes = () => {
+        const params = Object.fromEntries(new FormData(document.querySelector("form#product_addtocart_form")));
+
+        const attributes = Object.entries(params).reduce((newObj, [key, val]) => {
+            if (key.includes('super_attribute')) { // how to check "exist" is true ?
+              const id = key.match(/(\d)+/gm)[0];
+
+              if (!newObj['attribues']) {
+                newObj['attribues'] = [];
+              }
+
+              newObj['attribues'].push({
+                  [id]: val
+              })
+            }
+
+            if (key == 'qty') {
+                newObj['qty'] = val;
+            }
+
+            return newObj;
+          }, {});
+
+          const sku = document.querySelector('[itemprop="sku"]').innerText;
+          attributes['sku'] = sku;
+
+          return attributes;
+    }
+
+    const openCheckoutModal = async () => {
         overlay = document.createElement('div');
         const url = new URL(checkoutUrl);
-        url.searchParams.append('sku', sku);
+        const attributes = getProductAttributes();
+        url.searchParams.append('product', JSON.stringify(attributes));
 
         Object.assign(overlay.style, {
-            position: 'absolute',
+            position: 'fixed',
             left: '0',
             top: '0',
             display: 'table-cell',
@@ -28,7 +58,7 @@
         Object.assign(iframe.style, {
             width: '500px',
             minWidth: '500px',
-            height: '700px',
+            height: '750px',
             margin: '35px auto 0 auto',
             display: 'table-row',
             backgroundSize: '25%',
@@ -82,25 +112,24 @@
         iframe.addEventListener('load', () => {
             iframe.contentDocument.documentElement.innerHTML = html;
             iframe.contentWindow.addEventListener('click', () => {
-                const sku = document.querySelector('[itemprop="sku"]').innerText;
-                openCheckoutModal(sku);
+                openCheckoutModal();
             });
         });
     
         widget.appendChild(iframe);
     });
-})();
 
-window.addEventListener('onmessage', ({ data }) => {
-    console.log('event', data);
-    switch(data.event) {
-        case 'complete':
-            const orderId = data.order_id;
-            closeModal();
-            location.assign(`checkout/onepage/success/?order_id=${orderId}`);
-            break;
-        case 'cancel':
-            closeModal();
-            break;
-    }
-});
+    window.addEventListener('message', ({ data: { name, event, orderId } }) => {
+
+        if (name === 'zip_it') {
+            console.log('event', name, orderId);
+            switch(event) {
+                case 'complete':
+                    closeModal();
+                    location.assign(`checkout/onepage/success/?order_id=${orderId}`);
+                    break;
+            }
+        }
+        
+    });
+})();
